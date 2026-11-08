@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Byte Counter — GitHub Primer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Configuração do Tailwind seguindo a paleta GitHub Primer (Light Soft & Dark)
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Noto Sans"', 'Helvetica', 'Arial', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"'],
+            mono: ['ui-monospace', 'SFMono-Regular', '"SF Mono"', 'Menlo', 'Consolas', '"Liberation Mono"', 'monospace'],
+          },
+          colors: {
+            gh: {
+              // Dark Mode (GitHub Dark Default com alto contraste)
+              darkBg: '#0D1117',
+              darkCard: '#161B22',
+              darkBorder: '#363E47',
+              darkText: '#F0F6FC',
+              darkMuted: '#B1BAC4',
+              darkAccent: '#58A6FF',
+              darkSuccess: '#3FB950',
+              darkWarn: '#E3B341',
+              darkDanger: '#FF7B72',
+
+              // Light Mode (Paper Soft com alto contraste de leitura)
+              lightBg: '#E4EAEF',
+              lightCard: '#F7F9FB',
+              lightBorder: '#B8C2CC',
+              lightText: '#14191F',
+              lightMuted: '#3B444E',
+              lightAccent: '#0550AE',
+              lightSuccess: '#116329',
+              lightWarn: '#7D4E00',
+              lightDanger: '#A40E26',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <script>
+    // Inicialização imediata do tema antes da renderização para evitar flash
+    (function () {
+      try {
+        const saved = localStorage.getItem('bytecounter-theme');
+        if (saved === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else if (saved === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {
+        // Fallback silencioso
+      }
+    })();
+  </script>
+  <style>
+    /* Barra de rolagem discreta */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(139, 148, 158, 0.35); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(139, 148, 158, 0.55); }
+  </style>
+</head>
+<body class="bg-gh-lightBg text-gh-lightText dark:bg-gh-darkBg dark:text-gh-darkText font-sans min-h-screen flex flex-col transition-colors duration-200 selection:bg-gh-lightAccent/20 dark:selection:bg-gh-darkAccent/30">
+
+  <!-- Container Principal -->
+  <div class="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 flex-1 flex flex-col gap-4">
+
+    <!-- Cabeçalho e Ações Globais -->
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-gh-lightBorder dark:border-gh-darkBorder">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gh-lightAccent/10 text-gh-lightAccent dark:bg-gh-darkAccent/15 dark:text-gh-darkAccent border border-gh-lightAccent/25 dark:border-gh-darkAccent/30">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+              </svg>
+            </span>
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight">Byte Counter</h1>
+            <span class="hidden sm:inline-block text-[11px] font-mono px-2 py-0.5 rounded-full bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder text-gh-lightMuted dark:text-gh-darkMuted">
+              v2.4
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-gh-lightMuted dark:text-gh-darkMuted mt-1">
+            Análise precisa de bytes, encodings, BOM e graphemes em tempo real
+          </p>
+        </div>
+
+        <!-- Botão de Tema no Mobile -->
+        <button id="themeToggleMobile" type="button" title="Alternar tema claro/escuro"
+          class="sm:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder text-gh-lightText dark:text-gh-darkText hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+          <svg class="w-4 h-4 hidden dark:block text-gh-darkWarn" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg class="w-4 h-4 block dark:hidden text-gh-lightAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Barra de Ações -->
+      <div class="grid grid-cols-2 sm:flex sm:items-center gap-2">
+        <button id="themeToggleDesktop" type="button" title="Alternar tema claro/escuro"
+          class="hidden sm:inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+          <svg class="w-4 h-4 hidden dark:block text-gh-darkWarn" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg class="w-4 h-4 block dark:hidden text-gh-lightAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+          <span class="dark:hidden">Escuro</span>
+          <span class="hidden dark:inline">Claro</span>
+        </button>
+
+        <label for="fileInput"
+          class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent cursor-pointer transition">
+          <svg class="w-3.5 h-3.5 text-gh-lightAccent dark:text-gh-darkAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span>Abrir Arquivo</span>
+          <input id="fileInput" type="file" class="hidden" accept=".txt,.md,.json,.csv,.xml,.html,.js,.ts,.css,.log,.sql,.yml,.yaml,*/*" />
+        </label>
+
+        <div class="relative inline-flex rounded-lg shadow-sm">
+          <button id="downloadBtn" type="button"
+            class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-l-lg text-xs font-medium bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+            <svg class="w-3.5 h-3.5 text-gh-lightSuccess dark:text-gh-darkSuccess" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>Exportar</span>
+          </button>
+          <select id="exportFormat" aria-label="Formato de exportação"
+            class="h-9 px-2 rounded-r-lg text-xs font-mono font-semibold bg-gh-lightCard dark:bg-gh-darkCard border-y border-r border-gh-lightBorder dark:border-gh-darkBorder text-gh-lightText dark:text-gh-darkText focus:outline-none focus:border-gh-lightAccent dark:focus:border-gh-darkAccent cursor-pointer">
+            <option value="txt" selected>.TXT (Texto)</option>
+            <option value="json">.JSON (Dados)</option>
+            <option value="csv">.CSV (Planilha)</option>
+          </select>
+        </div>
+
+        <button id="copyBtn" type="button"
+          class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-gh-lightAccent text-white dark:bg-gh-darkAccent dark:text-gh-darkBg hover:opacity-90 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span id="copyBtnText">Copiar Resumo</span>
+        </button>
+
+        <button id="clearBtn" type="button"
+          class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder text-gh-lightDanger dark:text-gh-darkDanger hover:bg-gh-lightDanger/10 dark:hover:bg-gh-darkDanger/10 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <span>Limpar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Painel de Controles de Codificação e Regras -->
+    <section class="bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 shadow-sm">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+        <!-- Seletor de Encoding -->
+        <div class="lg:col-span-3 flex flex-col gap-1">
+          <label for="encoding" class="text-[11px] font-semibold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">
+            Codificação (Encoding)
+          </label>
+          <select id="encoding"
+            class="h-9 px-2.5 rounded-lg text-xs sm:text-sm font-medium bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder focus:outline-none focus:border-gh-lightAccent dark:focus:border-gh-darkAccent">
+            <option value="utf8" selected>UTF-8 (Padrão Web)</option>
+            <option value="utf16le">UTF-16 LE (Windows)</option>
+            <option value="utf16be">UTF-16 BE</option>
+            <option value="ascii">ASCII (7-bit lossy)</option>
+            <option value="latin1">ISO-8859-1 / Latin-1</option>
+          </select>
+        </div>
+
+        <!-- Seletor de Quebra de Linha -->
+        <div class="lg:col-span-3 flex flex-col gap-1">
+          <label for="newlineMode" class="text-[11px] font-semibold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">
+            Quebra de Linha (SO)
+          </label>
+          <select id="newlineMode"
+            class="h-9 px-2.5 rounded-lg text-xs sm:text-sm font-medium bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder focus:outline-none focus:border-gh-lightAccent dark:focus:border-gh-darkAccent">
+            <option value="lf" selected>Unix / Linux / macOS (LF \n)</option>
+            <option value="crlf">Windows (CRLF \r\n)</option>
+            <option value="preserve">Preservar Original</option>
+          </select>
+        </div>
+
+        <!-- Opções Booleanas -->
+        <div class="sm:col-span-2 lg:col-span-6 flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 lg:pt-4">
+          <label class="inline-flex items-center gap-2 text-xs sm:text-sm cursor-pointer select-none">
+            <input type="checkbox" id="includeBom" class="w-4 h-4 rounded accent-gh-lightAccent dark:accent-gh-darkAccent cursor-pointer" />
+            <span>Incluir BOM <span class="text-xs font-mono text-gh-lightMuted dark:text-gh-darkMuted">(+2/3B)</span></span>
+          </label>
+
+          <label class="inline-flex items-center gap-2 text-xs sm:text-sm cursor-pointer select-none">
+            <input type="checkbox" id="grapheme" checked class="w-4 h-4 rounded accent-gh-lightAccent dark:accent-gh-darkAccent cursor-pointer" />
+            <span>Graphemes <span class="text-xs text-gh-lightMuted dark:text-gh-darkMuted">(emoji = 1)</span></span>
+          </label>
+
+          <label class="inline-flex items-center gap-2 text-xs sm:text-sm cursor-pointer select-none">
+            <input type="checkbox" id="humanize" checked class="w-4 h-4 rounded accent-gh-lightAccent dark:accent-gh-darkAccent cursor-pointer" />
+            <span>Unidades KB/MB/GB</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards de Resumo Rápido -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+      <div class="bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 border-l-4 border-l-gh-lightSuccess dark:border-l-gh-darkSuccess shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">Tamanho Total</div>
+        <div id="cardBytes" class="font-mono text-xl sm:text-2xl font-bold text-gh-lightSuccess dark:text-gh-darkSuccess mt-1 break-all">0 B</div>
+        <div id="cardBytesSub" class="text-[11px] font-mono text-gh-lightMuted dark:text-gh-darkMuted mt-0.5">0 bytes exatos</div>
+      </div>
+
+      <div class="bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 border-l-4 border-l-gh-lightAccent dark:border-l-gh-darkAccent shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">Caracteres</div>
+        <div id="cardChars" class="font-mono text-xl sm:text-2xl font-bold mt-1 break-all">0</div>
+        <div id="cardCharsSub" class="text-[11px] font-mono text-gh-lightMuted dark:text-gh-darkMuted mt-0.5">0 sem espaços</div>
+      </div>
+
+      <div class="bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 border-l-4 border-l-gh-lightWarn dark:border-l-gh-darkWarn shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">Palavras</div>
+        <div id="cardWords" class="font-mono text-xl sm:text-2xl font-bold mt-1 break-all">0</div>
+        <div id="cardReadTime" class="text-[11px] font-mono text-gh-lightMuted dark:text-gh-darkMuted mt-0.5">~0s leitura</div>
+      </div>
+
+      <div class="bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 border-l-4 border-l-gh-lightMuted dark:border-l-gh-darkMuted shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">Linhas</div>
+        <div id="cardLines" class="font-mono text-xl sm:text-2xl font-bold mt-1 break-all">0</div>
+        <div id="cardNewlineTag" class="text-[11px] font-mono text-gh-lightMuted dark:text-gh-darkMuted mt-0.5">Modo LF (\n)</div>
+      </div>
+    </section>
+
+    <!-- Navegação por Abas Exclusiva para Mobile -->
+    <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder lg:hidden">
+      <button id="tabEditorBtn" type="button"
+        class="py-2 px-3 rounded-lg text-xs font-semibold bg-gh-lightAccent text-white dark:bg-gh-darkAccent dark:text-gh-darkBg transition">
+        Editor de Texto
+      </button>
+      <button id="tabMetricsBtn" type="button"
+        class="py-2 px-3 rounded-lg text-xs font-semibold text-gh-lightMuted dark:text-gh-darkMuted transition">
+        Métricas &amp; Hex
+      </button>
+    </div>
+
+    <!-- Área Principal: Editor (Esquerda) + Detalhamento Técnico (Direita) -->
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
+
+      <!-- Coluna do Editor -->
+      <div id="editorPane" class="lg:col-span-7 flex flex-col bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl overflow-hidden shadow-sm">
+        <!-- Toolbar Interna do Editor -->
+        <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-gh-lightBorder dark:border-gh-darkBorder bg-gh-lightBg/70 dark:bg-gh-darkBg/50">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-gh-lightMuted dark:text-gh-darkMuted">Entrada de Texto</span>
+            <span id="fileNameBadge" class="hidden text-[11px] font-mono px-2 py-0.5 rounded bg-gh-lightAccent/15 text-gh-lightAccent dark:bg-gh-darkAccent/15 dark:text-gh-darkAccent"></span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="pasteBtn" type="button"
+              class="px-2.5 py-1 rounded text-[11px] font-medium bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              Colar
+            </button>
+            <button id="trimSpacesBtn" type="button"
+              class="px-2.5 py-1 rounded text-[11px] font-medium bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              Limpar Espaços
+            </button>
+          </div>
+        </div>
+
+        <!-- Textarea com Suporte a Drag & Drop -->
+        <div id="dropZone" class="relative flex-1 flex flex-col">
+          <textarea
+            id="textInput"
+            class="w-full flex-1 min-h-[230px] sm:min-h-[340px] p-3.5 sm:p-4 bg-transparent text-gh-lightText dark:text-gh-darkText placeholder:text-gh-lightMuted/80 dark:placeholder:text-gh-darkMuted/80 font-mono text-xs sm:text-sm leading-relaxed resize-y focus:outline-none"
+            placeholder="Digite, cole seu texto ou arraste um arquivo para cá..."
+            spellcheck="false"
+            autofocus
+          ></textarea>
+          <div id="dropOverlay" class="hidden absolute inset-0 bg-gh-lightAccent/15 dark:bg-gh-darkAccent/15 border-2 border-dashed border-gh-lightAccent dark:border-gh-darkAccent flex items-center justify-center pointer-events-none">
+            <span class="px-4 py-2 rounded-lg bg-gh-lightCard dark:bg-gh-darkCard font-semibold text-sm shadow">
+              Solte o arquivo para analisar
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna de Métricas Detalhadas e Inspetor Hex -->
+      <aside id="metricsPane" class="hidden lg:flex lg:col-span-5 flex-col gap-3 bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3.5 sm:p-4 shadow-sm overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-gh-lightBorder dark:border-gh-darkBorder pb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-gh-lightAccent dark:text-gh-darkAccent">
+            Detalhamento Técnico
+          </h2>
+          <div id="badgesContainer" class="flex flex-wrap gap-1"></div>
+        </div>
+
+        <!-- Tabela de Métricas -->
+        <table class="w-full text-xs border-collapse">
+          <tbody class="divide-y divide-gh-lightBorder/70 dark:divide-gh-darkBorder/70">
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Kilobytes (KB)</td>
+              <td id="mKB" class="py-1.5 text-right font-mono font-semibold text-gh-lightSuccess dark:text-gh-darkSuccess">0,000 KB</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Megabytes (MB)</td>
+              <td id="mMB" class="py-1.5 text-right font-mono font-semibold text-gh-lightSuccess dark:text-gh-darkSuccess">0,0000 MB</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Gigabytes (GB)</td>
+              <td id="mGB" class="py-1.5 text-right font-mono font-semibold text-gh-lightSuccess dark:text-gh-darkSuccess">0,000000 GB</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Bytes (encoding ativo)</td>
+              <td id="mBytesActive" class="py-1.5 text-right font-mono font-semibold">0</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Bytes brutos do input</td>
+              <td id="mBytesRaw" class="py-1.5 text-right font-mono font-semibold">0</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Bytes UTF-8</td>
+              <td id="mBytesUtf8" class="py-1.5 text-right font-mono font-semibold">0</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Bytes UTF-16</td>
+              <td id="mBytesUtf16" class="py-1.5 text-right font-mono font-semibold">0</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Bytes ASCII / Latin-1</td>
+              <td id="mBytesAscii" class="py-1.5 text-right font-mono font-semibold">0</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Payload Base64 estimado</td>
+              <td id="mBytesBase64" class="py-1.5 text-right font-mono font-semibold text-gh-lightAccent dark:text-gh-darkAccent">0 B</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Caracteres (com espaço)</td>
+              <td id="mCharsWith" class="py-1.5 text-right font-mono font-semibold">0</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Caracteres (sem espaço)</td>
+              <td id="mCharsWithout" class="py-1.5 text-right font-mono font-semibold">0</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Graphemes visíveis</td>
+              <td id="mGraphemes" class="py-1.5 text-right font-mono font-semibold">0</td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-gh-lightMuted dark:text-gh-darkMuted">Palavras / Linhas</td>
+              <td id="mWordsLines" class="py-1.5 text-right font-mono font-semibold">0 / 0</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Preview Hexadecimal dos Primeiros 16 Bytes -->
+        <div class="mt-1 p-2.5 rounded-lg bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">
+              Preview Hex (16 bytes)
+            </span>
+            <span id="hexEncodingTag" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gh-lightAccent/15 text-gh-lightAccent dark:bg-gh-darkAccent/15 dark:text-gh-darkAccent">
+              UTF8
+            </span>
+          </div>
+          <div id="hexPreview" class="font-mono text-xs break-all text-gh-lightSuccess dark:text-gh-darkSuccess">
+            00 (aguardando texto)
+          </div>
+        </div>
+
+        <!-- Amostras Rápidas (Exibidas quando vazio) -->
+        <div id="samplesBox" class="pt-1">
+          <div class="text-[11px] font-semibold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted mb-1.5">
+            Amostras de Teste Rápido
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" data-sample="acentos"
+              class="sample-btn text-left px-2.5 py-1.5 rounded-lg text-[11px] bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              Acentos UTF-8
+            </button>
+            <button type="button" data-sample="emojis"
+              class="sample-btn text-left px-2.5 py-1.5 rounded-lg text-[11px] bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              Emojis Compostos
+            </button>
+            <button type="button" data-sample="json"
+              class="sample-btn text-left px-2.5 py-1.5 rounded-lg text-[11px] bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              Payload JSON
+            </button>
+            <button type="button" data-sample="crlf"
+              class="sample-btn text-left px-2.5 py-1.5 rounded-lg text-[11px] bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              Múltiplas Linhas
+            </button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Barra de Status Inferior -->
+    <footer class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder text-xs text-gh-lightMuted dark:text-gh-darkMuted">
+      <div id="statusBar">Pronto</div>
+      <div class="font-mono text-[11px]">Atalho: Ctrl/Cmd + Enter para recalcular</div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Referências DOM ----------
+  const $textInput = document.getElementById("textInput");
+  const $encoding = document.getElementById("encoding");
+  const $newlineMode = document.getElementById("newlineMode");
+  const $includeBom = document.getElementById("includeBom");
+  const $grapheme = document.getElementById("grapheme");
+  const $humanize = document.getElementById("humanize");
+
+  const $fileInput = document.getElementById("fileInput");
+  const $fileNameBadge = document.getElementById("fileNameBadge");
+  const $dropZone = document.getElementById("dropZone");
+  const $dropOverlay = document.getElementById("dropOverlay");
+
+  const $copyBtn = document.getElementById("copyBtn");
+  const $copyBtnText = document.getElementById("copyBtnText");
+  const $downloadBtn = document.getElementById("downloadBtn");
+  const $exportFormat = document.getElementById("exportFormat");
+  const $clearBtn = document.getElementById("clearBtn");
+  const $pasteBtn = document.getElementById("pasteBtn");
+  const $trimSpacesBtn = document.getElementById("trimSpacesBtn");
+  const $statusBar = document.getElementById("statusBar");
+
+  // Cards superiores
+  const $cardBytes = document.getElementById("cardBytes");
+  const $cardBytesSub = document.getElementById("cardBytesSub");
+  const $cardChars = document.getElementById("cardChars");
+  const $cardCharsSub = document.getElementById("cardCharsSub");
+  const $cardWords = document.getElementById("cardWords");
+  const $cardReadTime = document.getElementById("cardReadTime");
+  const $cardLines = document.getElementById("cardLines");
+  const $cardNewlineTag = document.getElementById("cardNewlineTag");
+
+  // Tabela técnica e preview
+  const $mKB = document.getElementById("mKB");
+  const $mMB = document.getElementById("mMB");
+  const $mGB = document.getElementById("mGB");
+  const $mBytesActive = document.getElementById("mBytesActive");
+  const $mBytesRaw = document.getElementById("mBytesRaw");
+  const $mBytesUtf8 = document.getElementById("mBytesUtf8");
+  const $mBytesUtf16 = document.getElementById("mBytesUtf16");
+  const $mBytesAscii = document.getElementById("mBytesAscii");
+  const $mBytesBase64 = document.getElementById("mBytesBase64");
+  const $mCharsWith = document.getElementById("mCharsWith");
+  const $mCharsWithout = document.getElementById("mCharsWithout");
+  const $mGraphemes = document.getElementById("mGraphemes");
+  const $mWordsLines = document.getElementById("mWordsLines");
+  const $badgesContainer = document.getElementById("badgesContainer");
+  const $hexPreview = document.getElementById("hexPreview");
+  const $hexEncodingTag = document.getElementById("hexEncodingTag");
+  const $samplesBox = document.getElementById("samplesBox");
+
+  // Abas mobile
+  const $tabEditorBtn = document.getElementById("tabEditorBtn");
+  const $tabMetricsBtn = document.getElementById("tabMetricsBtn");
+  const $editorPane = document.getElementById("editorPane");
+  const $metricsPane = document.getElementById("metricsPane");
+
+  let lastMetrics = null;
+
+  // ---------- Alternância de Tema ----------
+  function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle("dark");
+    try {
+      localStorage.setItem("bytecounter-theme", isDark ? "dark" : "light");
+    } catch (e) {}
+  }
+
+  document.getElementById("themeToggleDesktop").addEventListener("click", toggleTheme);
+  document.getElementById("themeToggleMobile").addEventListener("click", toggleTheme);
+
+  // ---------- Abas Mobile ----------
+  function setMobileTab(tab) {
+    const activeClasses = ["bg-gh-lightAccent", "text-white", "dark:bg-gh-darkAccent", "dark:text-gh-darkBg"];
+    const inactiveClasses = ["text-gh-lightMuted", "dark:text-gh-darkMuted"];
+
+    if (tab === "editor") {
+      $editorPane.classList.remove("hidden");
+      $editorPane.classList.add("flex");
+      $metricsPane.classList.add("hidden", "lg:flex");
+      $metricsPane.classList.remove("flex");
+
+      $tabEditorBtn.classList.add(...activeClasses);
+      $tabEditorBtn.classList.remove(...inactiveClasses);
+      $tabMetricsBtn.classList.remove(...activeClasses);
+      $tabMetricsBtn.classList.add(...inactiveClasses);
+    } else {
+      $editorPane.classList.add("hidden", "lg:flex");
+      $editorPane.classList.remove("flex");
+      $metricsPane.classList.remove("hidden");
+      $metricsPane.classList.add("flex");
+
+      $tabMetricsBtn.classList.add(...activeClasses);
+      $tabMetricsBtn.classList.remove(...inactiveClasses);
+      $tabEditorBtn.classList.remove(...activeClasses);
+      $tabEditorBtn.classList.add(...inactiveClasses);
+    }
+  }
+
+  $tabEditorBtn.addEventListener("click", () => setMobileTab("editor"));
+  $tabMetricsBtn.addEventListener("click", () => setMobileTab("metrics"));
+
+  // ---------- Quebras de Linha ----------
+  function applyNewlines(text, mode) {
+    if (mode === "crlf") {
+      return text.replace(/\r?\n/g, "\r\n");
+    }
+    if (mode === "lf") {
+      return text.replace(/\r\n/g, "\n");
+    }
+    return text;
+  }
+
+  // ---------- Encoders e BOM ----------
+  const utf8Encoder = new TextEncoder();
+
+  function getBomBytes(encoding) {
+    if (encoding === "utf8") return [0xEF, 0xBB, 0xBF];
+    if (encoding === "utf16le") return [0xFF, 0xFE];
+    if (encoding === "utf16be") return [0xFE, 0xFF];
+    return [];
+  }
+
+  function encodeBytes(text, encoding, withBom) {
+    const bom = withBom ? getBomBytes(encoding) : [];
+    let body = [];
+
+    if (encoding === "utf8") {
+      body = Array.from(utf8Encoder.encode(text));
+    } else if (encoding === "utf16le" || encoding === "utf16be") {
+      for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        if (encoding === "utf16le") {
+          body.push(code & 0xFF, (code >> 8) & 0xFF);
+        } else {
+          body.push((code >> 8) & 0xFF, code & 0xFF);
+        }
+      }
+    } else if (encoding === "ascii") {
+      for (const ch of text) {
+        const cp = ch.codePointAt(0);
+        body.push(cp <= 0x7F ? cp : 0x3F);
+      }
+    } else if (encoding === "latin1") {
+      for (const ch of text) {
+        const cp = ch.codePointAt(0);
+        body.push(cp <= 0xFF ? cp : 0x3F);
+      }
+    }
+
+    return new Uint8Array([...bom, ...body]);
+  }
+
+  function bytesUtf8(text) {
+    return utf8Encoder.encode(text).length;
+  }
+
+  function bytesUtf16(text) {
+    return text.length * 2;
+  }
+
+  function bytesLossy(text) {
+    let n = 0;
+    for (const _ of text) n++;
+    return n;
+  }
+
+  function base64ByteLength(byteLen) {
+    if (byteLen === 0) return 0;
+    return Math.ceil(byteLen / 3) * 4;
+  }
+
+  // ---------- Contadores de Caracteres, Palavras e Linhas ----------
+  const segmenter = typeof Intl !== "undefined" && Intl.Segmenter
+    ? new Intl.Segmenter("pt-BR", { granularity: "grapheme" })
+    : null;
+
+  function countGraphemes(text) {
+    if (segmenter) {
+      let n = 0;
+      for (const _ of segmenter.segment(text)) n++;
+      return n;
+    }
+    return [...text].length;
+  }
+
+  function charsWithSpaces(text, byGrapheme) {
+    return byGrapheme ? countGraphemes(text) : [...text].length;
+  }
+
+  function charsWithoutSpaces(text, byGrapheme) {
+    if (byGrapheme && segmenter) {
+      let n = 0;
+      for (const { segment } of segmenter.segment(text)) {
+        if (!/^\s+$/u.test(segment)) n++;
+      }
+      return n;
+    }
+    return [...text].filter(c => !/\s/u.test(c)).length;
+  }
+
+  function countWords(text) {
+    return text.split(/[\s\u0000-\u001F\u007F]+/u).filter(Boolean).length;
+  }
+
+  function countLines(text) {
+    if (text === "") return 0;
+    const normalized = text.replace(/\r\n/g, "\n");
+    const parts = normalized.split("\n");
+    return normalized.endsWith("\n") ? parts.length - 1 : parts.length;
+  }
+
+  function hasNonAscii(text) {
+    for (const ch of text) {
+      if (ch.codePointAt(0) > 0x7F) return true;
+    }
+    return false;
+  }
+
+  function hasNonLatin1(text) {
+    for (const ch of text) {
+      if (ch.codePointAt(0) > 0xFF) return true;
+    }
+    return false;
+  }
+
+  // ---------- Formatação ----------
+  function fmtNumber(n) {
+    return n.toLocaleString("pt-BR");
+  }
+
+  function humanize(bytes) {
+    const KB = 1024;
+    if (bytes < KB) return bytes + " B";
+    if (bytes < KB * KB) return (bytes / KB).toFixed(2) + " KB";
+    if (bytes < KB * KB * KB) return (bytes / (KB * KB)).toFixed(2) + " MB";
+    return (bytes / (KB * KB * KB)).toFixed(2) + " GB";
+  }
+
+  function formatReadTime(words) {
+    if (words === 0) return "~0s leitura";
+    const seconds = Math.max(1, Math.round((words / 200) * 60));
+    if (seconds < 60) return `~${seconds}s leitura`;
+    const mins = Math.floor(seconds / 60);
+    const rem = seconds % 60;
+    return rem > 0 ? `~${mins}m ${rem}s leitura` : `~${mins}m leitura`;
+  }
+
+  // ---------- Pipeline Principal ----------
+  function analyze(rawText) {
+    const enc = $encoding.value;
+    const nlMode = $newlineMode.value;
+    const withBom = $includeBom.checked;
+    const byGrapheme = $grapheme.checked;
+
+    const working = applyNewlines(rawText, nlMode);
+    const encodedArray = encodeBytes(working, enc, withBom);
+    const bytesEncoding = encodedArray.length;
+    const bomSize = withBom ? getBomBytes(enc).length : 0;
+
+    const hexSample = Array.from(encodedArray.slice(0, 16))
+      .map(b => b.toString(16).toUpperCase().padStart(2, "0"))
+      .join(" ");
+
+    return {
+      encoding: enc,
+      newlineMode: nlMode,
+      withBom,
+      bomSize,
+      bytesEncoding,
+      bytesRawInput: bytesUtf8(rawText),
+      bytesUtf8: bytesUtf8(working) + (withBom ? 3 : 0),
+      bytesUtf16: bytesUtf16(working) + (withBom ? 2 : 0),
+      bytesAscii: bytesLossy(working),
+      bytesLatin1: bytesLossy(working),
+      bytesBase64: base64ByteLength(bytesEncoding),
+      charsWithSpaces: charsWithSpaces(working, byGrapheme),
+      charsWithoutSpaces: charsWithoutSpaces(working, byGrapheme),
+      graphemes: countGraphemes(working),
+      words: countWords(working),
+      lines: countLines(working),
+      hasNonAscii: hasNonAscii(working),
+      hasNonLatin1: hasNonLatin1(working),
+      hasCrlf: working.includes("\r\n"),
+      hexSample,
+      hasMoreHex: encodedArray.length > 16,
+      humanized: humanize(bytesEncoding),
+    };
+  }
+
+  // ---------- Renderização ----------
+  function render(m) {
+    const data = m || analyze("");
+    lastMetrics = data;
+    const useHuman = $humanize.checked;
+
+    // Cards superiores
+    $cardBytes.textContent = useHuman && data.bytesEncoding >= 1024 ? data.humanized : fmtNumber(data.bytesEncoding) + " B";
+    $cardBytesSub.textContent = `${fmtNumber(data.bytesEncoding)} bytes exatos${data.bomSize ? ` (+${data.bomSize}B BOM)` : ""}`;
+
+    $cardChars.textContent = fmtNumber(data.charsWithSpaces);
+    $cardCharsSub.textContent = `${fmtNumber(data.charsWithoutSpaces)} sem espaços`;
+
+    $cardWords.textContent = fmtNumber(data.words);
+    $cardReadTime.textContent = formatReadTime(data.words);
+
+    $cardLines.textContent = fmtNumber(data.lines);
+    const nlLabels = { lf: "Modo LF (\\n)", crlf: "Modo CRLF (\\r\\n)", preserve: "Original" };
+    $cardNewlineTag.textContent = nlLabels[data.newlineMode] || "Modo LF";
+
+    // Conversões KB / MB / GB
+    const kb = data.bytesEncoding / 1024;
+    const mb = data.bytesEncoding / (1024 * 1024);
+    const gb = data.bytesEncoding / (1024 * 1024 * 1024);
+
+    $mKB.textContent = kb.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + " KB";
+    $mMB.textContent = mb.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 6 }) + " MB";
+    $mGB.textContent = gb.toLocaleString("pt-BR", { minimumFractionDigits: 6, maximumFractionDigits: 8 }) + " GB";
+
+    // Tabela técnica
+    $mBytesActive.textContent = fmtNumber(data.bytesEncoding) + " B";
+    $mBytesRaw.textContent = fmtNumber(data.bytesRawInput) + " B";
+    $mBytesUtf8.textContent = fmtNumber(data.bytesUtf8) + " B";
+    $mBytesUtf16.textContent = fmtNumber(data.bytesUtf16) + " B";
+    $mBytesAscii.textContent = fmtNumber(data.bytesAscii) + " B";
+    $mBytesBase64.textContent = fmtNumber(data.bytesBase64) + " B";
+    $mCharsWith.textContent = fmtNumber(data.charsWithSpaces);
+    $mCharsWithout.textContent = fmtNumber(data.charsWithoutSpaces);
+    $mGraphemes.textContent = fmtNumber(data.graphemes);
+    $mWordsLines.textContent = `${fmtNumber(data.words)} / ${fmtNumber(data.lines)}`;
+
+    // Badges de diagnóstico
+    const badges = [];
+    if (data.bomSize > 0) {
+      badges.push(`<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gh-lightAccent/15 text-gh-lightAccent dark:bg-gh-darkAccent/15 dark:text-gh-darkAccent">BOM +${data.bomSize}B</span>`);
+    }
+    if (data.hasCrlf) {
+      badges.push('<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gh-lightWarn/15 text-gh-lightWarn dark:bg-gh-darkWarn/15 dark:text-gh-darkWarn">CRLF</span>');
+    }
+    if (data.hasNonAscii) {
+      badges.push('<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gh-lightSuccess/15 text-gh-lightSuccess dark:bg-gh-darkSuccess/15 dark:text-gh-darkSuccess">UTF-8 Multibyte</span>');
+    }
+    if (data.hasNonLatin1) {
+      badges.push('<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gh-lightDanger/15 text-gh-lightDanger dark:bg-gh-darkDanger/15 dark:text-gh-darkDanger">&gt;Latin-1</span>');
+    }
+    $badgesContainer.innerHTML = badges.join("");
+
+    // Preview Hexadecimal
+    $hexEncodingTag.textContent = data.encoding.toUpperCase();
+    if (data.hexSample) {
+      $hexPreview.textContent = data.hexSample + (data.hasMoreHex ? " …" : "");
+    } else {
+      $hexPreview.textContent = "00 (aguardando texto)";
+    }
+
+    // Mostrar/ocultar amostras rápidas quando vazio
+    if ($textInput.value === "") {
+      $samplesBox.classList.remove("hidden");
+    } else {
+      $samplesBox.classList.add("hidden");
+    }
+  }
+
+  // ---------- Orquestração ----------
+  let debounceId = null;
+
+  function runImmediate() {
+    clearTimeout(debounceId);
+    try {
+      const m = analyze($textInput.value);
+      render(m);
+      $statusBar.textContent = "Pronto";
+    } catch (err) {
+      $statusBar.innerHTML = `<span class="text-gh-lightDanger dark:text-gh-darkDanger font-medium">Erro: ${err.message}</span>`;
+    }
+  }
+
+  function scheduleAnalyze() {
+    $statusBar.textContent = "Calculando…";
+    clearTimeout(debounceId);
+    debounceId = setTimeout(runImmediate, 90);
+  }
+
+  // ---------- Eventos de Entrada e Controles ----------
+  $textInput.addEventListener("input", scheduleAnalyze);
+  $encoding.addEventListener("change", runImmediate);
+  $newlineMode.addEventListener("change", runImmediate);
+  $includeBom.addEventListener("change", runImmediate);
+  $grapheme.addEventListener("change", runImmediate);
+  $humanize.addEventListener("change", runImmediate);
+
+  // Copiar Resumo
+  $copyBtn.addEventListener("click", () => {
+    const m = lastMetrics || analyze($textInput.value);
+    const valKB = (m.bytesEncoding / 1024).toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+    const valMB = (m.bytesEncoding / (1024 * 1024)).toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+
+    const summary = [
+      `Byte Counter — Resumo (${m.encoding.toUpperCase()}${m.bomSize ? ` + BOM ${m.bomSize}B` : ""})`,
+      `• Bytes (encoding ativo): ${fmtNumber(m.bytesEncoding)} B (${valKB} KB | ${valMB} MB)`,
+      `• Bytes UTF-8: ${fmtNumber(m.bytesUtf8)} B | UTF-16: ${fmtNumber(m.bytesUtf16)} B`,
+      `• Payload Base64: ${fmtNumber(m.bytesBase64)} B`,
+      `• Caracteres: ${fmtNumber(m.charsWithSpaces)} (${fmtNumber(m.charsWithoutSpaces)} sem espaços)`,
+      `• Palavras: ${fmtNumber(m.words)} | Linhas: ${fmtNumber(m.lines)}`,
+    ].join("\n");
+
+    let copied = false;
+    try {
+      const temp = document.createElement("textarea");
+      temp.value = summary;
+      temp.setAttribute("readonly", "");
+      temp.style.position = "fixed";
+      temp.style.opacity = "0";
+      document.body.appendChild(temp);
+      temp.select();
+      temp.setSelectionRange(0, temp.value.length);
+      copied = document.execCommand("copy");
+      document.body.removeChild(temp);
+    } catch (e) {}
+
+    if (!copied && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(summary).catch(() => {});
+    }
+
+    $copyBtnText.textContent = "Copiado!";
+    $statusBar.textContent = "Resumo das métricas copiado para a área de transferência";
+    setTimeout(() => {
+      $copyBtnText.textContent = "Copiar Resumo";
+      $statusBar.textContent = "Pronto";
+    }, 2000);
+  });
+
+  // Exportar arquivo (.TXT convertido ou relatório .JSON / .CSV)
+  $downloadBtn.addEventListener("click", () => {
+    const format = $exportFormat.value;
+    const enc = $encoding.value;
+    const nlMode = $newlineMode.value;
+    const withBom = $includeBom.checked;
+    const m = lastMetrics || analyze($textInput.value);
+
+    let blob;
+    let filename;
+
+    if (format === "json") {
+      const payload = {
+        timestamp: new Date().toISOString(),
+        configuracao: {
+          encoding: m.encoding,
+          quebraLinha: m.newlineMode,
+          bomIncluido: m.withBom,
+          bytesBom: m.bomSize,
+          contagemPorGrapheme: $grapheme.checked
+        },
+        metricas: {
+          bytesEncodingAtivo: m.bytesEncoding,
+          kilobytes: Number((m.bytesEncoding / 1024).toFixed(6)),
+          megabytes: Number((m.bytesEncoding / (1024 * 1024)).toFixed(8)),
+          gigabytes: Number((m.bytesEncoding / (1024 * 1024 * 1024)).toFixed(10)),
+          bytesBrutosInput: m.bytesRawInput,
+          bytesUtf8: m.bytesUtf8,
+          bytesUtf16: m.bytesUtf16,
+          bytesAsciiLatin1: m.bytesAscii,
+          payloadBase64Bytes: m.bytesBase64,
+          caracteresComEspaco: m.charsWithSpaces,
+          caracteresSemEspaco: m.charsWithoutSpaces,
+          graphemesVisiveis: m.graphemes,
+          palavras: m.words,
+          linhas: m.lines
+        },
+        diagnostico: {
+          contemCrlf: m.hasCrlf,
+          contemNaoAscii: m.hasNonAscii,
+          foraDeLatin1: m.hasNonLatin1,
+          previewHex16Bytes: m.hexSample
+        }
+      };
+      blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+      filename = `bytecounter-relatorio-${enc}.json`;
+    } else if (format === "csv") {
+      // Inclui BOM UTF-8 no CSV para abrir acentos perfeitamente no Excel
+      const rows = [
+        ["Metrica", "Valor", "Unidade"],
+        ["Encoding Ativo", m.encoding.toUpperCase(), "-"],
+        ["Quebra de Linha", m.newlineMode.toUpperCase(), "-"],
+        ["BOM Incluido", m.withBom ? "Sim" : "Nao", "bytes"],
+        ["Bytes (Encoding Ativo)", m.bytesEncoding, "B"],
+        ["Kilobytes (KB)", (m.bytesEncoding / 1024).toFixed(6).replace(".", ","), "KB"],
+        ["Megabytes (MB)", (m.bytesEncoding / (1024 * 1024)).toFixed(8).replace(".", ","), "MB"],
+        ["Gigabytes (GB)", (m.bytesEncoding / (1024 * 1024 * 1024)).toFixed(10).replace(".", ","), "GB"],
+        ["Bytes Brutos Input", m.bytesRawInput, "B"],
+        ["Bytes UTF-8", m.bytesUtf8, "B"],
+        ["Bytes UTF-16", m.bytesUtf16, "B"],
+        ["Bytes ASCII / Latin-1", m.bytesAscii, "B"],
+        ["Payload Base64 Estimado", m.bytesBase64, "B"],
+        ["Caracteres (com espaco)", m.charsWithSpaces, "chars"],
+        ["Caracteres (sem espaco)", m.charsWithoutSpaces, "chars"],
+        ["Graphemes Visiveis", m.graphemes, "graphemes"],
+        ["Palavras", m.words, "palavras"],
+        ["Linhas", m.lines, "linhas"]
+      ];
+      const csvContent = "\uFEFF" + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+      blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+      filename = `bytecounter-relatorio-${enc}.csv`;
+    } else {
+      const working = applyNewlines($textInput.value, nlMode);
+      const bytes = encodeBytes(working, enc, withBom);
+      blob = new Blob([bytes], { type: "application/octet-stream" });
+      filename = `texto-${enc}-${nlMode}.txt`;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    $statusBar.textContent = `Arquivo "${filename}" exportado com sucesso`;
+  });
+
+  // Limpar Editor
+  $clearBtn.addEventListener("click", () => {
+    $textInput.value = "";
+    $fileNameBadge.classList.add("hidden");
+    $fileNameBadge.textContent = "";
+    render(null);
+    $statusBar.textContent = "Editor limpo";
+    $textInput.focus();
+  });
+
+  // Colar da Área de Transferência
+  $pasteBtn.addEventListener("click", async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        $textInput.value = text;
+        runImmediate();
+        $statusBar.textContent = "Texto colado da área de transferência";
+      } else {
+        $textInput.focus();
+        $statusBar.textContent = "Use Ctrl+V / Cmd+V para colar no editor";
+      }
+    } catch (e) {
+      $textInput.focus();
+      $statusBar.textContent = "Permissão de leitura negada — use Ctrl+V / Cmd+V";
+    }
+  });
+
+  // Limpar Espaços Excedentes
+  $trimSpacesBtn.addEventListener("click", () => {
+    const cleaned = $textInput.value
+      .replace(/[ \t]+$/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    $textInput.value = cleaned;
+    runImmediate();
+    $statusBar.textContent = "Espaços excedentes removidos";
+  });
+
+  // Amostras Rápidas
+  const SAMPLES = {
+    acentos: "Atenção: coração, maçã, café, pingüim e crase à moda antiga.",
+    emojis: "Família 👨‍👩‍👧‍👦 + Bandeira 🇧🇷 + Foguete 🚀 (1 grapheme cada, múltiplos bytes UTF-8)",
+    json: '{\n  "usuario": "João Silva",\n  "ativo": true,\n  "saldo": 1450.75\n}',
+    crlf: "Linha 1\r\nLinha 2\r\nLinha 3\r\n"
+  };
+
+  document.querySelectorAll(".sample-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.getAttribute("data-sample");
+      if (SAMPLES[key]) {
+        $textInput.value = SAMPLES[key];
+        if (key === "crlf") $newlineMode.value = "crlf";
+        runImmediate();
+      }
+    });
+  });
+
+  // Leitura de Arquivo (Input e Drag & Drop) com detecção automática de BOM, Encoding e Formato
+  function detectEncodingFromBytes(uint8) {
+    if (uint8.length >= 3 && uint8[0] === 0xEF && uint8[1] === 0xBB && uint8[2] === 0xBF) {
+      return { encoding: "utf8", decodeAs: "utf-8", hasBom: true, bomOffset: 3 };
+    }
+    if (uint8.length >= 2 && uint8[0] === 0xFF && uint8[1] === 0xFE) {
+      return { encoding: "utf16le", decodeAs: "utf-16le", hasBom: true, bomOffset: 2 };
+    }
+    if (uint8.length >= 2 && uint8[0] === 0xFE && uint8[1] === 0xFF) {
+      return { encoding: "utf16be", decodeAs: "utf-16be", hasBom: true, bomOffset: 2 };
+    }
+    return { encoding: "utf8", decodeAs: "utf-8", hasBom: false, bomOffset: 0 };
+  }
+
+  function loadFile(file) {
+    if (!file) return;
+    $statusBar.textContent = `Analisando "${file.name}"…`;
+
+    const extMatch = file.name.match(/\.([a-zA-Z0-9]+)$/);
+    const ext = extMatch ? extMatch[1].toUpperCase() : "TXT";
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const buffer = e.target.result;
+        const uint8 = new Uint8Array(buffer);
+        const detected = detectEncodingFromBytes(uint8);
+
+        // Decodifica respeitando o encoding/BOM real do arquivo
+        const decoder = new TextDecoder(detected.decodeAs);
+        const content = decoder.decode(uint8.subarray(detected.bomOffset));
+
+        // Sincroniza controles automaticamente com o arquivo importado
+        $encoding.value = detected.encoding;
+        $includeBom.checked = detected.hasBom;
+
+        if (content.includes("\r\n")) {
+          $newlineMode.value = "crlf";
+        } else if (content.includes("\n")) {
+          $newlineMode.value = "lf";
+        }
+
+        // Sugere o mesmo formato na exportação se for TXT, JSON ou CSV
+        const lowerExt = ext.toLowerCase();
+        if (["txt", "json", "csv"].includes(lowerExt)) {
+          $exportFormat.value = lowerExt;
+        }
+
+        $textInput.value = content;
+        $fileNameBadge.textContent = `${file.name} • ${ext}`;
+        $fileNameBadge.classList.remove("hidden");
+
+        runImmediate();
+        $statusBar.textContent = `Arquivo "${file.name}" (${ext}) carregado — ${detected.encoding.toUpperCase()}${detected.hasBom ? " + BOM" : ""} (${humanize(file.size)})`;
+      } catch (err) {
+        $statusBar.innerHTML = `<span class="text-gh-lightDanger dark:text-gh-darkDanger">Erro ao decodificar o arquivo: ${err.message}</span>`;
+      }
+    };
+    reader.onerror = () => {
+      $statusBar.innerHTML = `<span class="text-gh-lightDanger dark:text-gh-darkDanger">Erro ao ler o arquivo.</span>`;
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  $fileInput.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      loadFile(e.target.files[0]);
+      e.target.value = "";
+    }
+  });
+
+  $dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    $dropOverlay.classList.remove("hidden");
+  });
+
+  $dropZone.addEventListener("dragleave", (e) => {
+    if (!$dropZone.contains(e.relatedTarget)) {
+      $dropOverlay.classList.add("hidden");
+    }
+  });
+
+  $dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    $dropOverlay.classList.add("hidden");
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      loadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  // Atalho Ctrl/Cmd + Enter global
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      runImmediate();
+    }
+  });
+
+  // Inicialização
+  render(null);
+})();
+</script>
+</body>
+</html>
